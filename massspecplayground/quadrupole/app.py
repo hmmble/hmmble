@@ -4,8 +4,8 @@ import streamlit as st
 from stability_overlay import generate_overlay_VU
 
 st.set_page_config(page_title="Quadrupole Stability Overlays", layout="centered")
-st.title("Mathieu Stability Diagram — V (RF Amplitude 0-peak) vs U (Isolating DC)")
-st.caption("Defaults: RF = 867 kHz, r₀ = 5 mm; stability required in x and y.")
+st.title("Mathieu Stability Diagram — V vs U ")
+st.caption("Defaults: RF = 867 kHz, r₀ = 5 mm; V = RF Amplitude (0-peak), U = Isolating DC; stability required in x and y.")
 
 col1, col2 = st.columns(2)
 with col1:
