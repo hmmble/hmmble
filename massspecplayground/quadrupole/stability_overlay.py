@@ -77,7 +77,7 @@ def generate_overlay_VU(
     r0_mm=5.0,
     q_samples=140,
     steps=200,
-    title_prefix="Exploris",
+    title_prefix="Quadrupole",
     filename_base="exploris_overlay",
     v_min=None, v_max=None,   # <-- NEW: optional V-axis limits (Volts)
     u_min=None, u_max=None    # <-- NEW: optional U-axis limits (Volts)
@@ -100,7 +100,7 @@ def generate_overlay_VU(
     ax.set_title(f"{title_prefix} stability regions — V (RF 0-pk) vs U (DC)\n"
                  f"{f_rf_Hz/1000:.0f} kHz, r₀ = {r0_mm:g} mm (x & y stable)")
     ax.set_xlabel("V (Volts, RF zero-to-peak)")
-    ax.set_ylabel("U (Volts, DC)")
+    ax.set_ylabel("U (Volts, Isolating DC)")
     ax.grid(True, alpha=0.35)
 
     # Default auto-limits
