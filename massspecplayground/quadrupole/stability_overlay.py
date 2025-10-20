@@ -1,4 +1,7 @@
+# stability_overlay.py
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # server-safe backend
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
@@ -14,13 +17,14 @@ def _monodromy_matrix(a, q, steps=200):
     tau = 0.0
     def acc(x, tau_local): return -(a - 2.0*q*np.cos(2.0*tau_local)) * x
     for _ in range(steps):
+        # (x1, v1)
         k1x1 = v1; k1v1 = acc(x1, tau)
         k2x1 = v1 + 0.5*h*k1v1; k2v1 = acc(x1 + 0.5*h*k1x1, tau + 0.5*h)
         k3x1 = v1 + 0.5*h*k2v1; k3v1 = acc(x1 + 0.5*h*k2x1, tau + 0.5*h)
         k4x1 = v1 + h*k3v1;      k4v1 = acc(x1 + h*k3x1, tau + h)
         x1 += (h/6.0)*(k1x1 + 2*k2x1 + 2*k3x1 + k4x1)
         v1 += (h/6.0)*(k1v1 + 2*k2v1 + 2*k3v1 + k4v1)
-
+        # (x2, v2)
         k1x2 = v2; k1v2 = acc(x2, tau)
         k2x2 = v2 + 0.5*h*k1v2; k2v2 = acc(x2 + 0.5*h*k1x2, tau + 0.5*h)
         k3x2 = v2 + 0.5*h*k2v2; k3v2 = acc(x2 + 0.5*h*k2x2, tau + 0.5*h)
@@ -67,14 +71,23 @@ def _to_VU(qb, ab, f_rf_Hz, r0_m, mz, z):
     scale_U = m * r0_m**2 * Omega**2 / (4*e)
     return scale_V * qb, scale_U * ab
 
-def generate_overlay_VU(ions, f_rf_Hz=867_000.0, r0_mm=5.0,
-                        q_samples=140, steps=200, title_prefix="Exploris",
-                        filename_base="exploris_overlay"):
+def generate_overlay_VU(
+    ions,
+    f_rf_Hz=867_000.0,
+    r0_mm=5.0,
+    q_samples=140,
+    steps=200,
+    title_prefix="Exploris",
+    filename_base="exploris_overlay",
+    v_min=None, v_max=None,   # <-- NEW: optional V-axis limits (Volts)
+    u_min=None, u_max=None    # <-- NEW: optional U-axis limits (Volts)
+):
     qb, ab = _trace_boundary(q_samples=q_samples, steps=steps)
     r0_m = r0_mm * 1e-3
     fig, ax = plt.subplots(figsize=(10, 8))
     palette = ["#1f77b4", "#ff7f0e", "#2ca02c"]
     handles, labels, allV, allU = [], [], [], []
+
     for idx, (mz, z) in enumerate(ions[:3]):
         Vb, Ub = _to_VU(qb, ab, f_rf_Hz, r0_m, mz, z)
         verts_closed = np.vstack([[Vb[0], 0.0], np.column_stack([Vb, Ub]), [Vb[-1], 0.0]])
@@ -83,13 +96,30 @@ def generate_overlay_VU(ions, f_rf_Hz=867_000.0, r0_mm=5.0,
                           edgecolor=palette[idx], linewidth=2.0, label=f"m/z {mz:g} (z={z})")
         ax.add_patch(patch); handles.append(patch); labels.append(f"m/z {mz:g} (z={z})")
         allV.append(Vb); allU.append(Ub)
+
     ax.set_title(f"{title_prefix} stability regions — V (RF 0-pk) vs U (DC)\n"
                  f"{f_rf_Hz/1000:.0f} kHz, r₀ = {r0_mm:g} mm (x & y stable)")
-    ax.set_xlabel("V (Volts, RF zero-to-peak)"); ax.set_ylabel("U (Volts, DC)")
+    ax.set_xlabel("V (Volts, RF zero-to-peak)")
+    ax.set_ylabel("U (Volts, DC)")
     ax.grid(True, alpha=0.35)
+
+    # Default auto-limits
     allV = np.concatenate(allV); allU = np.concatenate(allU)
-    ax.set_xlim(0, 1.05*np.max(allV)); ax.set_ylim(0, 1.05*np.max(allU))
+    auto_vmin, auto_vmax = 0.0, float(np.max(allV) * 1.05)
+    auto_umin, auto_umax = 0.0, float(np.max(allU) * 1.05)
+
+    # Apply custom limits if provided (and valid), otherwise fall back to auto
+    vmin = auto_vmin if (v_min is None) else float(v_min)
+    vmax = auto_vmax if (v_max is None) else float(v_max)
+    umin = auto_umin if (u_min is None) else float(u_min)
+    umax = auto_umax if (u_max is None) else float(u_max)
+
+    # Basic sanitization
+    if vmax <= vmin: vmax = vmin + 1.0
+    if umax <= umin: umax = umin + 1.0
+
+    ax.set_xlim(vmin, vmax)
+    ax.set_ylim(umin, umax)
     ax.legend(handles, labels, loc="upper right")
     plt.tight_layout()
-    svg = None  # We’ll export via Streamlit
     return fig
