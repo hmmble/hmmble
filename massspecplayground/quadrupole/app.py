@@ -48,7 +48,7 @@ def render_overlay_cached(ions, f_rf_Hz, r0_mm, q_samples, steps, vmin, vmax, um
         r0_mm=r0_mm,
         q_samples=q_samples,
         steps=steps,
-        title_prefix="Exploris",
+        title_prefix="Quadrupole",
         filename_base="exploris_overlay",
         v_min=vmin, v_max=vmax,
         u_min=umin, u_max=umax
